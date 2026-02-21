@@ -198,6 +198,11 @@ public class FileController {
         String expectedPassword = ConfigConstants.getDeleteCaptcha() ? WebUtils.getSessionAttr(request, CAPTCHA_CODE)
                 : ConfigConstants.getPassword();
 
+        // 未配置删除密码且未启用验证码时，禁用删除功能
+        if (!ConfigConstants.getDeleteCaptcha() && !org.springframework.util.StringUtils.hasText(expectedPassword)) {
+            return ReturnResponse.failure("删除功能未启用，请先配置 delete.password");
+        }
+
         if (!password.equalsIgnoreCase(expectedPassword)) {
             logger.error("删除文件【{}】失败，密码错误！", fileName);
             return ReturnResponse.failure("删除文件失败，密码错误！");

@@ -91,6 +91,15 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    public FilterRegistrationBean<SecurityHeadersFilter> getSecurityHeadersFilter() {
+        SecurityHeadersFilter filter = new SecurityHeadersFilter();
+        FilterRegistrationBean<SecurityHeadersFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(filter);
+        registrationBean.setOrder(1);
+        return registrationBean;
+    }
+
+    @Bean
     public FilterRegistrationBean<AttributeSetFilter> getWatermarkConfigFilter() {
         Set<String> filterUri = new HashSet<>();
         filterUri.add("/index");

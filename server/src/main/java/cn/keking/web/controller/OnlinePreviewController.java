@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.opensagres.xdocreport.core.io.IOUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
+import cn.keking.utils.SafeRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +34,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +142,7 @@ public class OnlinePreviewController {
             factory.setConnectionRequestTimeout(2000);
             factory.setConnectTimeout(10000);
             factory.setReadTimeout(72000);
-            HttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new DefaultRedirectStrategy()).build();
+            HttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new SafeRedirectStrategy()).build();
             factory.setHttpClient(httpClient);
             restTemplate.setRequestFactory(factory);
             RequestCallback requestCallback = request -> {
@@ -195,8 +197,10 @@ public class OnlinePreviewController {
             logger.warn("addTask接口未配置密钥，拒绝访问");
             return "error: addTask interface is disabled, please configure addTask.secret.key";
         }
-        // 校验密钥
-        if (!configKey.equals(secretKey)) {
+        // 校验密钥（使用恒定时间比较，防止时序攻击）
+        if (secretKey == null || !MessageDigest.isEqual(
+                configKey.getBytes(StandardCharsets.UTF_8),
+                secretKey.getBytes(StandardCharsets.UTF_8))) {
             logger.warn("addTask接口密钥校验失败");
             return "error: invalid secretKey";
         }

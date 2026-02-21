@@ -23,19 +23,19 @@
      */
     function initWaterMark() {
 
-        let watermarkTxt = '${watermarkTxt}';
+        let watermarkTxt = '${watermarkTxt?js_string}';
         if (watermarkTxt !== '') {
             watermark.init({
-                watermark_txt: '${watermarkTxt}',
+                watermark_txt: '${watermarkTxt?js_string}',
                 watermark_x: 0,
                 watermark_y: 0,
                 watermark_rows: 0,
                 watermark_cols: 0,
                 watermark_x_space: ${watermarkXSpace},
                 watermark_y_space: ${watermarkYSpace},
-                watermark_font: '${watermarkFont}',
-                watermark_fontsize: '${watermarkFontsize}',
-                watermark_color: '${watermarkColor}',
+                watermark_font: '${watermarkFont?js_string}',
+                watermark_fontsize: '${watermarkFontsize?js_string}',
+                watermark_color: '${watermarkColor?js_string}',
                 watermark_alpha: ${watermarkAlpha},
                 watermark_width: ${watermarkWidth},
                 watermark_height: ${watermarkHeight},

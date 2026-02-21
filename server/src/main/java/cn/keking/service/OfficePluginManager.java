@@ -86,51 +86,42 @@ public class OfficePluginManager {
         boolean flag = false;
         try {
             if (OSUtils.IS_OS_WINDOWS) {
-                Process p = Runtime.getRuntime().exec("cmd /c tasklist ");
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                InputStream os = p.getInputStream();
-                byte[] b = new byte[256];
-                while (os.read(b) > 0) {
-                    baos.write(b);
-                }
-                String s = baos.toString();
+                ProcessBuilder pb = new ProcessBuilder("tasklist");
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+                String s = readProcessOutput(p);
                 if (s.contains("soffice.bin")) {
-                    Runtime.getRuntime().exec("taskkill /im " + "soffice.bin" + " /f");
-                    flag = true;
-                }
-            } else if (OSUtils.IS_OS_MAC || OSUtils.IS_OS_MAC_OSX) {
-                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", "ps -ef | grep " + "soffice.bin"});
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                InputStream os = p.getInputStream();
-                byte[] b = new byte[256];
-                while (os.read(b) > 0) {
-                    baos.write(b);
-                }
-                String s = baos.toString();
-                if (StringUtils.ordinalIndexOf(s, "soffice.bin", 3) > 0) {
-                    String[] cmd = {"sh", "-c", "kill -15 `ps -ef|grep " + "soffice.bin" + "|awk 'NR==1{print $2}'`"};
-                    Runtime.getRuntime().exec(cmd);
+                    new ProcessBuilder("taskkill", "/im", "soffice.bin", "/f").start();
                     flag = true;
                 }
             } else {
-                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", "ps -ef | grep " + "soffice.bin" + " |grep -v grep | wc -l"});
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                InputStream os = p.getInputStream();
-                byte[] b = new byte[256];
-                while (os.read(b) > 0) {
-                    baos.write(b);
-                }
-                String s = baos.toString();
-                if (!s.startsWith("0")) {
-                    String[] cmd = {"sh", "-c", "ps -ef | grep soffice.bin | grep -v grep | awk '{print \"kill -9 \"$2}' | sh"};
-                    Runtime.getRuntime().exec(cmd);
+                // macOS 和 Linux 统一使用 pgrep/pkill，避免 shell 管道注入风险
+                ProcessBuilder pb = new ProcessBuilder("pgrep", "-f", "soffice.bin");
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+                String s = readProcessOutput(p);
+                int exitCode = p.waitFor();
+                if (exitCode == 0 && !s.trim().isEmpty()) {
+                    // pgrep 找到了进程，使用 pkill 终止
+                    new ProcessBuilder("pkill", "-f", "soffice.bin").start();
                     flag = true;
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             logger.error("检测office进程异常", e);
         }
         return flag;
+    }
+
+    private String readProcessOutput(Process process) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        InputStream is = process.getInputStream();
+        byte[] b = new byte[256];
+        int len;
+        while ((len = is.read(b)) > 0) {
+            baos.write(b, 0, len);
+        }
+        return baos.toString();
     }
 
     @PreDestroy

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mola.galimatias.GalimatiasParseException;
 import org.apache.commons.io.FileUtils;
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
+import cn.keking.utils.SafeRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class DownloadUtils {
                     factory.setConnectionRequestTimeout(2000);  //设置超时时间
                     factory.setConnectTimeout(10000);
                     factory.setReadTimeout(72000);
-                    HttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new DefaultRedirectStrategy()).build();
+                    HttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new SafeRedirectStrategy()).build();
                     factory.setHttpClient(httpClient);  //加入重定向方法
                     restTemplate.setRequestFactory(factory);
                     RequestCallback requestCallback = request -> {

@@ -262,6 +262,25 @@ public class CacheServiceRocksDBImpl implements CacheService {
         Object obj;
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bis);
+        // 反序列化白名单过滤，防止RCE攻击
+        ois.setObjectInputFilter(info -> {
+            Class<?> clazz = info.serialClass();
+            if (clazz != null) {
+                // 只允许安全的JDK集合和基本类型
+                if (clazz == java.util.HashMap.class
+                        || clazz == java.util.ArrayList.class
+                        || clazz == java.lang.String.class
+                        || clazz == java.lang.Integer.class
+                        || clazz == java.lang.Long.class
+                        || clazz == java.lang.Number.class
+                        || clazz.isArray()) {
+                    return java.io.ObjectInputFilter.Status.ALLOWED;
+                }
+                LOGGER.warn("反序列化白名单拒绝类型: {}", clazz.getName());
+                return java.io.ObjectInputFilter.Status.REJECTED;
+            }
+            return java.io.ObjectInputFilter.Status.UNDECIDED;
+        });
         obj = ois.readObject();
         ois.close();
         bis.close();

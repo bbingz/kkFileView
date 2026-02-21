@@ -95,7 +95,7 @@ public class ConfigConstants {
     public static final String DEFAULT_BEIAN = "无";
     public static final String DEFAULT_SIZE = "500MB";
     public static final String DEFAULT_PROHIBIT = "exe,dll";
-    public static final String DEFAULT_PASSWORD = "123456";
+    public static final String DEFAULT_PASSWORD = "";
     public static final String DEFAULT_PDF2_JPG_DPI = "105";
     public static final String DEFAULT_OFFICE_TYPE_WEB = "web";
     public static final String DEFAULT_DELETE_SOURCE_FILE = "true";
@@ -485,7 +485,7 @@ public class ConfigConstants {
         return password;
     }
 
-    @Value("${delete.password:123456}")
+    @Value("${delete.password:}")
     public void setPassword(String password) {
         setPasswordValue(password);
     }

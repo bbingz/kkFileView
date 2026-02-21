@@ -9,6 +9,10 @@ import org.springframework.web.util.HtmlUtils;
 
 import java.io.File;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -34,15 +38,39 @@ public class KkFileUtils {
 
     /**
      * 检查文件名是否合规
+     * 增强：先URL解码（防止 %2e%2e%2f 等编码绕过），再黑名单检测 + Path.normalize() 白名单校验
      *
      * @param fileName 文件名
      * @return 合规结果, true:不合规，false:合规
      */
     public static boolean isIllegalFileName(String fileName) {
+        // 先对文件名进行URL解码，防止 %2e%2e%2f 等编码绕过
+        String decoded = fileName;
+        try {
+            // 循环解码以防双重编码
+            String prev;
+            do {
+                prev = decoded;
+                decoded = URLDecoder.decode(prev, StandardCharsets.UTF_8);
+            } while (!decoded.equals(prev));
+        } catch (Exception e) {
+            // 解码失败视为非法
+            return true;
+        }
+        // 黑名单检测（对原始和解码后的字符串均检查）
         for (String str : illegalFileStrList) {
-            if (fileName.contains(str)) {
+            if (fileName.contains(str) || decoded.contains(str)) {
                 return true;
             }
+        }
+        // Path.normalize() 白名单校验：规范化后不应包含 ".."
+        try {
+            Path normalized = Paths.get(decoded).normalize();
+            if (normalized.toString().contains("..")) {
+                return true;
+            }
+        } catch (Exception e) {
+            return true;
         }
         return false;
     }

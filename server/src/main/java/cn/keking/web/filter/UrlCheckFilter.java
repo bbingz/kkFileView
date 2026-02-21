@@ -32,19 +32,13 @@ public class UrlCheckFilter implements Filter {
             redirect = true;
         }
         if (redirect) {
-            String redirectUrl;
-            if (StringUtils.isBlank(BaseUrlFilter.getBaseUrl())) {
-                // 正常 BaseUrlFilter 有限此 Filter 执行，不会执行到此
-                redirectUrl = httpServletRequest.getContextPath() + servletPath;
-            } else {
-                if (BaseUrlFilter.getBaseUrl().endsWith("/") && servletPath.startsWith("/")) {
-                    // BaseUrlFilter.getBaseUrl() 以 / 结尾，servletPath 以 / 开头，需再去除一次 //
-                    redirectUrl = BaseUrlFilter.getBaseUrl() + servletPath.substring(1);
-                } else {
-                    redirectUrl = BaseUrlFilter.getBaseUrl() + servletPath;
-                }
+            // 安全：始终使用相对路径重定向，防止通过 base URL 注入造成开放重定向
+            String redirectUrl = httpServletRequest.getContextPath() + servletPath;
+            String queryString = httpServletRequest.getQueryString();
+            if (StringUtils.isNotBlank(queryString)) {
+                redirectUrl = redirectUrl + "?" + queryString;
             }
-            ((HttpServletResponse) response).sendRedirect(redirectUrl + "?" + httpServletRequest.getQueryString());
+            ((HttpServletResponse) response).sendRedirect(redirectUrl);
         } else {
             chain.doFilter(request, response);
         }

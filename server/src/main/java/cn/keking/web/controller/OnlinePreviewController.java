@@ -1,5 +1,6 @@
 package cn.keking.web.controller;
 
+import cn.keking.config.ConfigConstants;
 import cn.keking.model.FileAttribute;
 import cn.keking.service.FileHandlerService;
 import cn.keking.service.FilePreview;
@@ -147,7 +148,13 @@ public class OnlinePreviewController {
                 String proxyAuthorization = fileAttribute.getKkProxyAuthorization();
                 if(StringUtils.hasText(proxyAuthorization)){
                     Map<String,String> proxyAuthorizationMap = mapper.readValue(proxyAuthorization, Map.class);
-                    proxyAuthorizationMap.forEach((key, value) -> request.getHeaders().set(key, value));
+                    proxyAuthorizationMap.forEach((key, value) -> {
+                        if (WebUtils.isSafeProxyHeader(key)) {
+                            request.getHeaders().set(key, value);
+                        } else {
+                            logger.warn("kk-proxy-authorization 中包含被禁止的请求头: {}", key);
+                        }
+                    });
                 }
             };
             try {
@@ -156,7 +163,7 @@ public class OnlinePreviewController {
                     return null;
                 });
             }  catch (Exception e) {
-                System.out.println(e);
+                logger.error("读取跨域文件异常", e);
             }
         }else{
             try {
@@ -174,13 +181,25 @@ public class OnlinePreviewController {
     }
 
     /**
-     * 通过api接口入队
+     * 通过api接口入队（需要配置 addTask.secret.key 并在请求中携带 secretKey 参数）
      *
      * @param url 请编码后在入队
+     * @param secretKey 密钥
      */
     @GetMapping("/addTask")
     @ResponseBody
-    public String addQueueTask(String url) {
+    public String addQueueTask(String url, String secretKey) {
+        String configKey = ConfigConstants.getAddTaskSecretKey();
+        // 未配置密钥时禁用此接口
+        if (!StringUtils.hasText(configKey)) {
+            logger.warn("addTask接口未配置密钥，拒绝访问");
+            return "error: addTask interface is disabled, please configure addTask.secret.key";
+        }
+        // 校验密钥
+        if (!configKey.equals(secretKey)) {
+            logger.warn("addTask接口密钥校验失败");
+            return "error: invalid secretKey";
+        }
         logger.info("添加转码队列url：{}", url);
         cacheService.addQueueTask(url);
         return "success";

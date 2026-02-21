@@ -50,13 +50,15 @@ public class DownloadUtils {
      * @return 本地文件绝对路径
      */
     public static ReturnResponse<String> downLoad(FileAttribute fileAttribute, String fileName) {
-        // 忽略ssl证书
         String urlStr = null;
         try {
-            SslUtils.ignoreSsl();
+            // 仅在明确配置ssl.disabled=true时才忽略SSL证书校验
+            if (ConfigConstants.getSslDisabled()) {
+                SslUtils.ignoreSsl();
+            }
             urlStr = fileAttribute.getUrl().replaceAll("\\+", "%20").replaceAll(" ", "%20");
         } catch (Exception e) {
-            logger.error("忽略SSL证书异常:", e);
+            logger.error("SSL配置异常:", e);
         }
         ReturnResponse<String> response = new ReturnResponse<>(0, "下载成功!!!", "");
         String realPath = getRelFilePath(fileName, fileAttribute);
@@ -101,7 +103,13 @@ public class DownloadUtils {
                         String proxyAuthorization = fileAttribute.getKkProxyAuthorization();
                         if(StringUtils.hasText(proxyAuthorization)){
                             Map<String,String>  proxyAuthorizationMap = mapper.readValue(proxyAuthorization, Map.class);
-                            proxyAuthorizationMap.forEach((key, value) -> request.getHeaders().set(key, value));
+                            proxyAuthorizationMap.forEach((key, value) -> {
+                                if (WebUtils.isSafeProxyHeader(key)) {
+                                    request.getHeaders().set(key, value);
+                                } else {
+                                    logger.warn("kk-proxy-authorization 中包含被禁止的请求头: {}", key);
+                                }
+                            });
                         }
                     };
                     try {

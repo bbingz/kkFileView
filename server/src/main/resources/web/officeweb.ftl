@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <title>${file.name}预览</title>
+    <title>${file.name?html}预览</title>
     <link rel='stylesheet' href='xlsx/plugins/css/pluginsCss.css' />
     <link rel='stylesheet' href='xlsx/plugins/plugins.css' />
     <link rel='stylesheet' href='xlsx/css/luckysheet.css' />
@@ -83,7 +83,7 @@
     function loadText() {
         initWaterMark(); // 是否显示水印
         var value = url;
-        var name = '${file.name}';
+        var name = '${file.name?js_string}';
         if(value==""){
             return;
         }

@@ -203,7 +203,7 @@
         $("#deleteCaptchaConfirmBtn").click(function() {
             var fileName = $("#deleteCaptchaFileName").val();
             var deleteCaptchaText = $("#deleteCaptchaText").val();
-            $.get('${baseUrl}deleteFile?fileName=' + fileName +'&password=' + deleteCaptchaText, function(data){
+            $.post('${baseUrl}deleteFile', {fileName: fileName, password: deleteCaptchaText}, function(data){
                 if ("删除文件失败，密码错误！" === data.msg) {
                     alert(data.msg);
                 } else {
@@ -224,7 +224,9 @@
             if (window.confirm('你确定要删除文件吗？')) {
                 password = prompt("请输入默认密码:123456");
                 $.ajax({
-                    url: '${baseUrl}deleteFile?fileName=' + fileName +'&password='+password,
+                    url: '${baseUrl}deleteFile',
+                    type: 'POST',
+                    data: {fileName: fileName, password: password},
                     success: function (data) {
                         if ("删除文件失败，密码错误！" === data.msg) {
                             alert(data.msg);

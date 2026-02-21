@@ -36,7 +36,7 @@
         backdrop: false,
         loop : true
     });
-    document.getElementById("${currentUrl}").click();
+    document.getElementById("${currentUrl?html}").click();
 
     /*初始化水印*/
     window.onload = function() {

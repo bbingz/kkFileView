@@ -40,7 +40,7 @@ import static cn.keking.utils.CaptchaUtil.CAPTCHA_GENERATE_TIME;
 
 /**
  * @author yudian-it
- * 2017/12/1
+ *         2017/12/1
  */
 @RestController
 public class FileController {
@@ -65,7 +65,8 @@ public class FileController {
         }
         String fileName = checkResult.getContent().toString();
         logger.info("上传文件：{}{}{}", fileDir, demoPath, fileName);
-        try (InputStream in = file.getInputStream(); OutputStream out = Files.newOutputStream(Paths.get(fileDir + demoPath + fileName))) {
+        try (InputStream in = file.getInputStream();
+                OutputStream out = Files.newOutputStream(Paths.get(fileDir + demoPath + fileName))) {
             StreamUtils.copy(in, out);
             return ReturnResponse.success(null);
         } catch (IOException e) {
@@ -74,7 +75,7 @@ public class FileController {
         }
     }
 
-    @GetMapping("/deleteFile")
+    @PostMapping("/deleteFile")
     public ReturnResponse<Object> deleteFile(HttpServletRequest request, String fileName, String password) {
         ReturnResponse<Object> checkResult = this.deleteFileCheck(request, fileName, password);
         if (checkResult.isFailure()) {
@@ -88,7 +89,7 @@ public class FileController {
             logger.error(msg);
             return ReturnResponse.failure(msg);
         }
-        WebUtils.removeSessionAttr(request, CAPTCHA_CODE); //删除缓存验证码
+        WebUtils.removeSessionAttr(request, CAPTCHA_CODE); // 删除缓存验证码
         return ReturnResponse.success();
     }
 
@@ -167,7 +168,6 @@ public class FileController {
         return ReturnResponse.success(fileName);
     }
 
-
     /**
      * 删除文件前校验
      *
@@ -195,7 +195,8 @@ public class FileController {
             return ReturnResponse.failure("密码 or 验证码为空，删除失败！");
         }
 
-        String expectedPassword = ConfigConstants.getDeleteCaptcha() ? WebUtils.getSessionAttr(request, CAPTCHA_CODE) : ConfigConstants.getPassword();
+        String expectedPassword = ConfigConstants.getDeleteCaptcha() ? WebUtils.getSessionAttr(request, CAPTCHA_CODE)
+                : ConfigConstants.getPassword();
 
         if (!password.equalsIgnoreCase(expectedPassword)) {
             logger.error("删除文件【{}】失败，密码错误！", fileName);
@@ -213,11 +214,15 @@ public class FileController {
             String errorMsg = String.format(BASE64_DECODE_ERROR_MSG, "url");
             return ReturnResponse.failure(errorMsg);
         }
-        fileUrl = fileUrl.replaceAll("http://", "");
-        if (KkFileUtils.isIllegalFileName(fileUrl)) {
-            return ReturnResponse.failure("不允许访问的路径:");
+        if (fileUrl == null || KkFileUtils.isIllegalFileName(fileUrl)) {
+            return ReturnResponse.failure("不允许访问的路径");
         }
-        return RarUtils.getTree(fileUrl);
+        // 安全：移除协议头后仅允许访问 fileDir 下的文件路径
+        String safePath = fileUrl.replaceAll("^https?://", "");
+        if (KkFileUtils.isIllegalFileName(safePath)) {
+            return ReturnResponse.failure("不允许访问的路径");
+        }
+        return RarUtils.getTree(safePath);
     }
 
     private boolean existsFile(String fileName) {

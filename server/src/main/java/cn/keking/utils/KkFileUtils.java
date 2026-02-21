@@ -107,10 +107,7 @@ public class KkFileUtils {
 
     public static String htmlEscape(String input) {
         if (StringUtils.hasText(input)) {
-            //input = input.replaceAll("\\{", "%7B").replaceAll("}", "%7D").replaceAll("\\\\", "%5C");
-            String htmlStr = HtmlUtils.htmlEscape(input, "UTF-8");
-            //& -> &amp;
-            return htmlStr.replace("&amp;", "&");
+            return HtmlUtils.htmlEscape(input, "UTF-8");
         }
         return input;
     }
@@ -183,19 +180,55 @@ public class KkFileUtils {
     }
 
     /**
-     * 判断文件是否允许上传
+     * 判断文件是否允许（上传/下载均调用此方法）
+     * 采用白名单机制，覆盖 FileType.java 中定义的所有可预览文件类型
+     * 仅排除操作系统可执行文件（exe, dll, dat 等）
      *
-     * @param file 文件扩展名
-     * @return 是否允许上传
+     * @param file 文件名
+     * @return 是否允许
      */
+    private static final java.util.Set<String> ALLOWED_TYPES = new java.util.HashSet<>(java.util.Arrays.asList(
+            // Office 文档（41种）
+            "doc", "docx", "docm", "dot", "dotx", "dotm", "wps", "wpt",
+            "xls", "xlsx", "xlsm", "xlt", "xltx", "xltm", "xlam", "xla", "csv", "tsv", "et", "ett",
+            "ppt", "pptx", "dps",
+            "vsd", "vsdx", "rtf", "odt", "ods", "odp", "ott", "ots", "otp", "sxi", "fodt", "fods",
+            "wmf", "emf", "tga", "psd", "pages", "eps",
+            // PDF
+            "pdf",
+            // 图片（8种）
+            "jpg", "jpeg", "png", "gif", "bmp", "ico", "jfif", "webp",
+            // 压缩包（7种）
+            "rar", "zip", "jar", "7z", "7-zip", "tar", "gzip", "gz", "bz2",
+            // 文本/代码（含 simText + CODES，排除 ftl 模板）
+            "txt", "md", "xml", "xbrl", "json", "properties", "yml", "yaml", "log", "gitignore",
+            "java", "py", "python", "c", "cpp", "h", "cs", "go", "rb", "lua", "php",
+            "js", "css", "html", "htm", "asp", "aspx", "jsp", "sql",
+            "sh", "bat", "m", "bas", "prg", "cmd",
+            // CAD（12种）
+            "dwg", "dxf", "dwf", "dwt", "dwfx", "iges", "igs", "dng", "ifc", "stl", "cf2", "plt",
+            // 3D 模型（20种）
+            "obj", "3ds", "ply", "off", "3dm", "fbx", "dae", "wrl", "3mf",
+            "glb", "o3dv", "gltf", "stp", "step", "bim", "fcstd", "brep",
+            // TIFF
+            "tif", "tiff",
+            // 媒体（含 media + convertMedias）
+            "mp3", "wav", "wma", "amr", "ogg", "flac", "aac", "m4a",
+            "mp4", "avi", "mov", "wmv", "mkv", "3gp", "rm", "rmvb", "flv", "mpd", "m3u8", "ts", "mpeg",
+            // 特殊文档格式
+            "ofd", "eml", "xmind", "svg", "epub", "bpmn", "dcm", "drawio"
+    ));
+
     public static boolean isAllowedUpload(String file) {
         String fileType = suffixFromFileName(file);
-        for (String type : ConfigConstants.getProhibit()) {
-            if (type.equals(fileType)){
-                return false;
-            }
+        if (ObjectUtils.isEmpty(fileType)) {
+            return false;
         }
-        return !ObjectUtils.isEmpty(fileType);
+        if (!ALLOWED_TYPES.contains(fileType.toLowerCase())) {
+            LOGGER.warn("拒绝不支持的文件类型: {}", fileType);
+            return false;
+        }
+        return true;
     }
 
     /**

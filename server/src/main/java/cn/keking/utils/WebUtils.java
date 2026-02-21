@@ -371,4 +371,27 @@ public class WebUtils {
         }
         session.removeAttribute(key);
     }
+
+    /**
+     * 禁止通过 kk-proxy-authorization 设置的HTTP头名称（防止请求头注入攻击）
+     */
+    private static final java.util.Set<String> FORBIDDEN_PROXY_HEADERS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "host", "connection", "content-length", "content-type", "transfer-encoding",
+            "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-forwarded-port",
+            "x-real-ip", "forwarded", "via", "cookie", "set-cookie",
+            "origin", "referer", "expect", "upgrade", "te",
+            "proxy-connection", "proxy-authenticate", "proxy-authorization"
+    ));
+
+    /**
+     * 检查代理请求头名称是否安全（允许设置）
+     * @param headerName 头名称
+     * @return true 表示安全可用，false 表示被禁止
+     */
+    public static boolean isSafeProxyHeader(String headerName) {
+        if (headerName == null) {
+            return false;
+        }
+        return !FORBIDDEN_PROXY_HEADERS.contains(headerName.toLowerCase().trim());
+    }
 }

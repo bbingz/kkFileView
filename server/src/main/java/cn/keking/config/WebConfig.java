@@ -20,16 +20,20 @@ import java.util.Set;
 public class WebConfig implements WebMvcConfigurer {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(WebConfig.class);
+
     /**
      * 访问外部文件配置
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // fileDir 必须映射为静态资源：Office/CAD/TIFF 转换后的 PDF/HTML/SVG/JPG 均存储在此目录，
+        // 前端通过 baseUrl + relativePath 加载。移除此映射会导致所有转换预览 404。
+        // 上传安全由 isAllowedUpload() 白名单 + file.upload.disable 控制，不依赖此处拦截。
         String filePath = ConfigConstants.getFileDir();
         LOGGER.info("Add resource locations: {}", filePath);
-        registry.addResourceHandler("/**").addResourceLocations("classpath:/META-INF/resources/","classpath:/resources/","classpath:/static/","classpath:/public/","file:" + filePath);
+        registry.addResourceHandler("/**").addResourceLocations("classpath:/META-INF/resources/",
+                "classpath:/resources/", "classpath:/static/", "classpath:/public/", "file:" + filePath);
     }
-
 
     @Bean
     public FilterRegistrationBean<ChinesePathFilter> getChinesePathFilter() {
